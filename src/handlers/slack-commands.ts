@@ -7,7 +7,7 @@ import { Env } from '../index';
 export async function handleSlackCommands(
   request: Request,
   env: Env,
-  ctx: ExecutionContext
+  _ctx: ExecutionContext
 ): Promise<Response> {
   const logger = createLogger(request);
   logger.info('Received Slack command request');

@@ -54,7 +54,7 @@ export class Logger {
 
 export function createLogger(request?: Request): Logger {
   const requestId = request?.headers.get('x-request-id') || 
-    crypto.randomUUID?.() || 
+    (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : null) ||
     Math.random().toString(36).substring(7);
   
   return new Logger(requestId);

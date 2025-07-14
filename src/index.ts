@@ -1,10 +1,6 @@
-import { Router } from 'itty-router';
 import { handleSlackEvents } from './handlers/slack-events';
 import { handleSlackCommands } from './handlers/slack-commands';
 import { handleOAuthRedirect } from './handlers/oauth';
-import { withErrorHandling } from './middleware/error-handler';
-import { createLogger } from './utils/logger';
-import { SLACK_ENDPOINTS } from './config/constants';
 
 export interface Env {
   BIRTHDAY_KV?: KVNamespace;
@@ -14,36 +10,72 @@ export interface Env {
   ADMIN_PASSWORD?: string;
 }
 
-const router = Router();
-
-router.get('/', () => {
-  return new Response('Dwell Birthday Calendar Worker is running!', {
-    headers: { 'Content-Type': 'text/plain' },
-  });
-});
-
-router.get('/health', () => {
-  return new Response(JSON.stringify({ status: 'healthy', timestamp: new Date().toISOString() }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
-});
-
-router.post(SLACK_ENDPOINTS.EVENTS, withErrorHandling(handleSlackEvents));
-router.post(SLACK_ENDPOINTS.COMMANDS, withErrorHandling(handleSlackCommands));
-router.get(SLACK_ENDPOINTS.OAUTH_REDIRECT, withErrorHandling(handleOAuthRedirect));
-
-router.all('*', () => {
-  return new Response('Not Found', { status: 404 });
-});
-
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const logger = createLogger(request);
-    logger.info('Processing request', { 
-      method: request.method, 
-      url: request.url 
-    });
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    const method = request.method;
 
-    return router.handle(request, env, ctx);
+    // Health check endpoint
+    if (pathname === '/health' && method === 'GET') {
+      return new Response(JSON.stringify({ 
+        status: 'healthy', 
+        timestamp: new Date().toISOString(),
+        url: request.url,
+        domain: url.hostname,
+        method: method,
+        pathname: pathname
+      }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Root endpoint
+    if (pathname === '/' && method === 'GET') {
+      return new Response('Dwell Birthday Calendar Worker is running!', {
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    }
+
+    // Slack events endpoint
+    if (pathname === '/slack/events' && method === 'POST') {
+      try {
+        return await handleSlackEvents(request, env, ctx);
+      } catch (error) {
+        console.error('Error in slack events handler:', error);
+        return new Response('Internal Server Error', { status: 500 });
+      }
+    }
+
+    // Slack commands endpoint
+    if (pathname === '/slack/commands' && method === 'POST') {
+      try {
+        return await handleSlackCommands(request, env, ctx);
+      } catch (error) {
+        console.error('Error in slack commands handler:', error);
+        return new Response('Internal Server Error', { status: 500 });
+      }
+    }
+
+    // OAuth redirect endpoint  
+    if (pathname === '/oauth/redirect' && method === 'GET') {
+      try {
+        return await handleOAuthRedirect(request, env, ctx);
+      } catch (error) {
+        console.error('Error in OAuth handler:', error);
+        return new Response('OAuth Error', { status: 500 });
+      }
+    }
+
+    // Debug info for unmatched routes
+    return new Response(JSON.stringify({
+      message: 'Not Found',
+      pathname: pathname,
+      method: method,
+      url: request.url
+    }), { 
+      status: 404,
+      headers: { 'Content-Type': 'application/json' }
+    });
   },
 };

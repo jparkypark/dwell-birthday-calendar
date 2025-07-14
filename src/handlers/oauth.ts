@@ -1,12 +1,13 @@
-import { SlackOAuthResponse } from '../types';
+import { SlackOAuthResponse, SlackInstallation } from '../types';
 import { createLogger } from '../utils/logger';
 import { AppError } from '../middleware/error-handler';
+import { createStorageService } from '../utils/storage';
 import { Env } from '../index';
 
 export async function handleOAuthRedirect(
   request: Request,
   env: Env,
-  ctx: ExecutionContext
+  _ctx: ExecutionContext
 ): Promise<Response> {
   const logger = createLogger(request);
   logger.info('Received OAuth redirect request');
@@ -54,6 +55,28 @@ export async function handleOAuthRedirect(
       teamId: tokenData.team.id,
       appId: tokenData.app_id 
     });
+
+    // Store installation data in KV
+    try {
+      const storageService = createStorageService(env, request);
+      
+      const installation: SlackInstallation = {
+        teamId: tokenData.team.id,
+        accessToken: tokenData.access_token,
+        botToken: tokenData.access_token, // In OAuth v2, this is the bot token
+        installedAt: Date.now(),
+      };
+
+      await storageService.storeInstallation(tokenData.team.id, installation);
+      logger.info('Installation data stored successfully', { teamId: tokenData.team.id });
+    } catch (storageError) {
+      logger.error('Failed to store installation data', { 
+        teamId: tokenData.team.id, 
+        error: storageError 
+      });
+      // Continue with success response even if storage fails
+      // This prevents blocking the OAuth flow
+    }
 
     const html = `
       <!DOCTYPE html>
