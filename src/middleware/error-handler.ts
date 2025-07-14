@@ -40,10 +40,10 @@ export function createErrorResponse(
 }
 
 export function withErrorHandling(
-  handler: (request: Request, env: any, ctx: ExecutionContext) => Promise<Response>,
+  handler: (request: Request, env: unknown, ctx: ExecutionContext) => Promise<Response>,
   logger?: Logger
 ) {
-  return async (request: Request, env: any, ctx: ExecutionContext): Promise<Response> => {
+  return async (request: Request, env: unknown, ctx: ExecutionContext): Promise<Response> => {
     try {
       return await handler(request, env, ctx);
     } catch (error) {

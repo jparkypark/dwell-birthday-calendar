@@ -16,6 +16,6 @@ export interface UpcomingBirthday extends Birthday {
 }
 
 export interface BirthdayCache {
-  blocks: any[];
+  blocks: Record<string, unknown>[];
   lastUpdated: number;
 }

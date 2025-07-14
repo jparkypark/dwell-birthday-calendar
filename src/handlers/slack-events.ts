@@ -3,6 +3,7 @@ import { createLogger, Logger } from '../utils/logger';
 import { verifySlackRequest } from '../middleware/slack-verification';
 import { createStorageService } from '../utils/storage';
 import { AppError } from '../middleware/error-handler';
+import { validateSlackEvent, validateUrlVerification } from '../utils/validation';
 import { Env } from '../index';
 
 export async function handleSlackEvents(
@@ -31,6 +32,8 @@ export async function handleSlackEvents(
 
   if (payload.type === 'url_verification') {
     logger.info('Handling URL verification challenge');
+    
+    validateUrlVerification(payload);
     const verification = payload as SlackVerificationRequest;
     
     // Log challenge details for debugging
@@ -44,6 +47,7 @@ export async function handleSlackEvents(
     });
   }
 
+  validateSlackEvent(payload);
   const slackEvent = payload as SlackEvent;
   logger.info('Processing Slack event', { 
     eventType: slackEvent.event.type,

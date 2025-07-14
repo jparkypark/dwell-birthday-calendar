@@ -7,13 +7,14 @@ export interface SlackEvent {
     user: string;
     channel?: string;
     tab?: string;
-    view?: any;
-    [key: string]: any;
+    view?: Record<string, unknown>;
+    [key: string]: unknown;
   };
   type: string;
   event_id: string;
   event_time: number;
   authed_users: string[];
+  [key: string]: unknown;
 }
 
 export interface SlackCommand {
@@ -28,6 +29,7 @@ export interface SlackCommand {
   text: string;
   response_url: string;
   trigger_id: string;
+  [key: string]: unknown;
 }
 
 export interface SlackInstallation {
@@ -39,7 +41,7 @@ export interface SlackInstallation {
 
 export interface SlackBlock {
   type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface SlackView {
@@ -50,6 +52,7 @@ export interface SlackVerificationRequest {
   type: 'url_verification';
   token: string;
   challenge: string;
+  [key: string]: unknown;
 }
 
 export interface SlackOAuthResponse {

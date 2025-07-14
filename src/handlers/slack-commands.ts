@@ -2,6 +2,7 @@ import { SlackCommand } from '../types';
 import { createLogger, Logger } from '../utils/logger';
 import { verifySlackRequest } from '../middleware/slack-verification';
 import { AppError } from '../middleware/error-handler';
+import { validateSlackCommand } from '../utils/validation';
 import { Env } from '../index';
 
 export async function handleSlackCommands(
@@ -33,6 +34,8 @@ export async function handleSlackCommands(
     response_url: formData.get('response_url') || '',
     trigger_id: formData.get('trigger_id') || '',
   };
+
+  validateSlackCommand(command);
 
   logger.info('Processing Slack command', { 
     command: command.command,

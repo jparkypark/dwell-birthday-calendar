@@ -9,7 +9,7 @@ export interface LogEntry {
   timestamp: string;
   level: string;
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
   requestId?: string;
 }
 
@@ -21,7 +21,7 @@ export class Logger {
     this.requestId = requestId;
   }
 
-  private log(level: LogLevel, message: string, data?: any): void {
+  private log(level: LogLevel, message: string, data?: Record<string, unknown>): void {
     if (level < this.minLevel) return;
 
     const entry: LogEntry = {
@@ -35,25 +35,26 @@ export class Logger {
     console.log(JSON.stringify(entry));
   }
 
-  debug(message: string, data?: any): void {
+  debug(message: string, data?: Record<string, unknown>): void {
     this.log(LogLevel.DEBUG, message, data);
   }
 
-  info(message: string, data?: any): void {
+  info(message: string, data?: Record<string, unknown>): void {
     this.log(LogLevel.INFO, message, data);
   }
 
-  warn(message: string, data?: any): void {
+  warn(message: string, data?: Record<string, unknown>): void {
     this.log(LogLevel.WARN, message, data);
   }
 
-  error(message: string, data?: any): void {
+  error(message: string, data?: Record<string, unknown>): void {
     this.log(LogLevel.ERROR, message, data);
   }
 }
 
 export function createLogger(request?: Request): Logger {
   const requestId = request?.headers.get('x-request-id') || 
+    request?.headers.get('cf-ray') ||
     (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : null) ||
     Math.random().toString(36).substring(7);
   

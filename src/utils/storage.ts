@@ -118,7 +118,7 @@ export class StorageService {
   /**
    * Store cached home view
    */
-  async storeCachedHomeView(data: any, expirationSeconds: number = 3600): Promise<void> {
+  async storeCachedHomeView(data: Record<string, unknown>, expirationSeconds: number = 3600): Promise<void> {
     try {
       const cacheEntry = {
         data,
@@ -142,7 +142,7 @@ export class StorageService {
   /**
    * Get cached home view if not expired
    */
-  async getCachedHomeView(): Promise<any | null> {
+  async getCachedHomeView(): Promise<Record<string, unknown> | null> {
     try {
       const data = await this.kv.get(STORAGE_KEYS.CACHE_HOME_VIEW, 'text');
       

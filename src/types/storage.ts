@@ -4,13 +4,13 @@ export interface KVStorageKeys {
   CACHE_HOME_VIEW: 'cache:home_view';
 }
 
-export interface StorageOperation<T = any> {
+export interface StorageOperation<T = unknown> {
   key: string;
   value?: T;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
-export interface CacheEntry<T = any> {
+export interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;
   expiresAt: number;
