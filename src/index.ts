@@ -1,6 +1,7 @@
 import { Router } from 'itty-router';
 import { handleSlackEvents } from './handlers/slack-events';
 import { handleSlackCommands } from './handlers/slack-commands';
+import { handleSlackInteractive } from './handlers/slack-interactive';
 import { handleOAuthRedirect } from './handlers/oauth';
 import { createLogger } from './utils/logger';
 import { createErrorResponse } from './middleware/error-handler';
@@ -60,6 +61,18 @@ router.post('/slack/commands', async (request: Request, env: Env, ctx: Execution
   } catch (error) {
     const err = error as Error;
     logger.error('Error in slack commands handler', { error: err.message, stack: err.stack });
+    return createErrorResponse(err, logger['requestId']);
+  }
+});
+
+// Slack interactive endpoint
+router.post('/slack/interactive', async (request: Request, env: Env, ctx: ExecutionContext) => {
+  const logger = createLogger(request);
+  try {
+    return await handleSlackInteractive(request, env, ctx);
+  } catch (error) {
+    const err = error as Error;
+    logger.error('Error in slack interactive handler', { error: err.message, stack: err.stack });
     return createErrorResponse(err, logger['requestId']);
   }
 });

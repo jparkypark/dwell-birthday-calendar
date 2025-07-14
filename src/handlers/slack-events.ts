@@ -1,9 +1,12 @@
 import { SlackEvent, SlackVerificationRequest } from '../types';
+import { SlackHomeView } from '../types/slack';
 import { createLogger, Logger } from '../utils/logger';
 import { verifySlackRequest } from '../middleware/slack-verification';
 import { createStorageService } from '../utils/storage';
 import { AppError } from '../middleware/error-handler';
 import { validateSlackEvent, validateUrlVerification } from '../utils/validation';
+import { createSlackApiService } from '../services/slack-api';
+import { createHomeViewGenerator } from '../services/home-view-generator';
 import { Env } from '../index';
 
 export async function handleSlackEvents(
@@ -91,13 +94,43 @@ async function handleAppHomeOpened(
       return new Response('OK', { status: 200 });
     }
 
-    logger.info('Installation verified, home tab will be updated', {
+    logger.info('Installation verified, generating home view', {
       teamId: event.team_id,
       userId: event.event.user
     });
 
-    // TODO: In Phase 2, we'll implement actual home view generation here
-    // For now, just log that we're ready to handle this event
+    // Check for cached home view first
+    const cachedView = await storageService.getCachedHomeView();
+    if (cachedView) {
+      logger.info('Using cached home view');
+      
+      const slackApi = createSlackApiService(logger);
+      await slackApi.publishHomeView(
+        installation,
+        event.event.user,
+        cachedView as SlackHomeView
+      );
+      
+      return new Response('OK', { status: 200 });
+    }
+
+    // Generate new home view
+    const birthdayData = await storageService.getBirthdayData();
+    const homeViewGenerator = createHomeViewGenerator(logger);
+    const homeView = homeViewGenerator.generateHomeView(birthdayData.birthdays);
+
+    // Cache the view for 1 hour
+    await storageService.storeCachedHomeView(homeView, 3600);
+
+    // Publish the view to Slack
+    const slackApi = createSlackApiService(logger);
+    await slackApi.publishHomeView(installation, event.event.user, homeView);
+
+    logger.info('Home view published successfully', {
+      teamId: event.team_id,
+      userId: event.event.user,
+      birthdayCount: birthdayData.birthdays.length
+    });
     
     return new Response('OK', { status: 200 });
   } catch (error) {
@@ -105,6 +138,23 @@ async function handleAppHomeOpened(
       teamId: event.team_id,
       error 
     });
+    
+    // Try to show error view to user
+    try {
+      const installation = await createStorageService(env, request).getInstallation(event.team_id);
+      if (installation) {
+        const homeViewGenerator = createHomeViewGenerator(logger);
+        const errorView = homeViewGenerator.generateErrorView(
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+        
+        const slackApi = createSlackApiService(logger);
+        await slackApi.publishHomeView(installation, event.event.user, errorView);
+      }
+    } catch (errorViewError) {
+      logger.error('Failed to show error view', { errorViewError });
+    }
+    
     return new Response('OK', { status: 200 });
   }
 }

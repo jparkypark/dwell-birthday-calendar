@@ -121,7 +121,7 @@ export class StorageService {
   /**
    * Store cached home view
    */
-  async storeCachedHomeView(data: Record<string, unknown>, expirationSeconds: number = 3600): Promise<void> {
+  async storeCachedHomeView(data: Record<string, unknown> | import('../types/slack').SlackHomeView, expirationSeconds: number = 3600): Promise<void> {
     try {
       const cacheEntry = {
         data,
@@ -145,7 +145,7 @@ export class StorageService {
   /**
    * Get cached home view if not expired
    */
-  async getCachedHomeView(): Promise<Record<string, unknown> | null> {
+  async getCachedHomeView(): Promise<Record<string, unknown> | import('../types/slack').SlackHomeView | null> {
     try {
       const data = await this.kv.get(STORAGE_KEYS.CACHE_HOME_VIEW, 'text');
       
