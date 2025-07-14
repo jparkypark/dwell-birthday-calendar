@@ -414,6 +414,8 @@ Validate JSON structure
 - [ ] Monitor performance
 
 #### Step 3: Testing & Documentation
+- [ ] Basic unit tests for core business logic
+- [ ] Performance monitoring with basic logging for cache hit rates and reponse times
 - [ ] End-to-end testing
 - [ ] Load testing with 20+ birthdays
 - [ ] Write admin documentation

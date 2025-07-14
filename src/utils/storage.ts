@@ -183,6 +183,43 @@ export class StorageService {
   }
 
   /**
+   * Get cache status information
+   */
+  async getCacheStatus(): Promise<{ lastUpdated: number | null; isExpired: boolean }> {
+    try {
+      const data = await this.kv.get(STORAGE_KEYS.CACHE_HOME_VIEW, 'text');
+      
+      if (!data) {
+        return { lastUpdated: null, isExpired: true };
+      }
+
+      const cacheEntry = JSON.parse(data);
+      const isExpired = Date.now() > cacheEntry.expiresAt;
+      
+      return {
+        lastUpdated: cacheEntry.timestamp,
+        isExpired
+      };
+    } catch (error) {
+      this.logger.error('Failed to get cache status', { error });
+      return { lastUpdated: null, isExpired: true };
+    }
+  }
+
+  /**
+   * Clear all cache data
+   */
+  async clearCache(): Promise<void> {
+    try {
+      await this.clearCachedHomeView();
+      this.logger.info('All cache cleared');
+    } catch (error) {
+      this.logger.error('Failed to clear cache', { error });
+      throw error;
+    }
+  }
+
+  /**
    * Store birthday data with validation
    */
   async storeBirthdayData(data: BirthdayData): Promise<void> {

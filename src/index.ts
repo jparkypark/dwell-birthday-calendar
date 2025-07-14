@@ -3,6 +3,9 @@ import { handleSlackEvents } from './handlers/slack-events';
 import { handleSlackCommands } from './handlers/slack-commands';
 import { handleSlackInteractive } from './handlers/slack-interactive';
 import { handleOAuthRedirect } from './handlers/oauth';
+import { AdminHandler } from './handlers/admin';
+import { AdminUpdateHandler } from './handlers/admin-update';
+import { createAdminAuthMiddleware } from './middleware/admin-auth';
 import { createLogger } from './utils/logger';
 import { createErrorResponse } from './middleware/error-handler';
 import { validateEnvironmentVariables } from './utils/validation';
@@ -85,6 +88,47 @@ router.get('/oauth/redirect', async (request: Request, env: Env, ctx: ExecutionC
   } catch (error) {
     const err = error as Error;
     logger.error('Error in OAuth handler', { error: err.message, stack: err.stack });
+    return createErrorResponse(err, logger['requestId']);
+  }
+});
+
+// Admin routes with authentication middleware
+const adminAuthMiddleware = createAdminAuthMiddleware();
+const adminHandler = new AdminHandler();
+const adminUpdateHandler = new AdminUpdateHandler();
+
+// Admin panel endpoint
+router.get('/admin', async (request: Request, env: Env, ctx: ExecutionContext) => {
+  const logger = createLogger(request);
+  try {
+    // Check authentication first
+    const authResponse = await adminAuthMiddleware(request, env);
+    if (authResponse) {
+      return authResponse; // Return 401 if auth fails
+    }
+    
+    return await adminHandler.processRequest(request, env, ctx);
+  } catch (error) {
+    const err = error as Error;
+    logger.error('Error in admin handler', { error: err.message, stack: err.stack });
+    return createErrorResponse(err, logger['requestId']);
+  }
+});
+
+// Admin update endpoint
+router.post('/admin/update', async (request: Request, env: Env, ctx: ExecutionContext) => {
+  const logger = createLogger(request);
+  try {
+    // Check authentication first
+    const authResponse = await adminAuthMiddleware(request, env);
+    if (authResponse) {
+      return authResponse; // Return 401 if auth fails
+    }
+    
+    return await adminUpdateHandler.processRequest(request, env, ctx);
+  } catch (error) {
+    const err = error as Error;
+    logger.error('Error in admin update handler', { error: err.message, stack: err.stack });
     return createErrorResponse(err, logger['requestId']);
   }
 });
