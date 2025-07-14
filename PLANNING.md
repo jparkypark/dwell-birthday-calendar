@@ -384,11 +384,11 @@ Validate JSON structure
 - [x] Add data migration utilities
 
 #### Step 2: Slash Command
-- [ ] Implement `/birthdays` handler
-- [ ] Format birthday list output
-- [ ] Add error responses
-- [ ] Test in Slack workspace
-- [ ] Optimize response time
+- [x] Implement `/birthdays` handler
+- [x] Format birthday list output
+- [x] Add error responses
+- [x] Test in Slack workspace
+- [x] Optimize response time
 
 #### Step 3: Home Tab
 - [ ] Implement home tab view generator
