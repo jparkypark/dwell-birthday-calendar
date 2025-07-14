@@ -377,11 +377,11 @@ Validate JSON structure
 ### Phase 2: Core Features
 
 #### Step 1: Data Layer
-- [ ] Implement KV storage operations
-- [ ] Create birthday data validators
-- [ ] Build date calculation utilities
-- [ ] Test edge cases (year boundaries)
-- [ ] Add data migration utilities
+- [x] Implement KV storage operations
+- [x] Create birthday data validators
+- [x] Build date calculation utilities
+- [x] Test edge cases (year boundaries)
+- [x] Add data migration utilities
 
 #### Step 2: Slash Command
 - [ ] Implement `/birthdays` handler

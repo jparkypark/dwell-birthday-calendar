@@ -1,4 +1,7 @@
 import { SlackInstallation } from '../types';
+import { BirthdayData } from '../types/birthday';
+import { validateBirthdayData, validateBirthdayDataLimits } from './validators';
+import { migrateToLatestFormat } from './migration';
 import { createLogger, Logger } from './logger';
 import { Env } from '../index';
 
@@ -176,6 +179,147 @@ export class StorageService {
     } catch (error) {
       this.logger.error('Failed to clear cached home view', { error });
       throw error;
+    }
+  }
+
+  /**
+   * Store birthday data with validation
+   */
+  async storeBirthdayData(data: BirthdayData): Promise<void> {
+    try {
+      this.logger.info('Storing birthday data', { count: data.birthdays.length });
+      
+      // Validate the data before storing
+      const validatedData = validateBirthdayData(data);
+      validateBirthdayDataLimits(validatedData);
+      
+      await this.kv.put(
+        STORAGE_KEYS.BIRTHDAY_DATA,
+        JSON.stringify(validatedData),
+        { 
+          metadata: { 
+            updatedAt: Date.now(),
+            birthdayCount: validatedData.birthdays.length
+          }
+        }
+      );
+      
+      this.logger.info('Birthday data stored successfully', { count: validatedData.birthdays.length });
+      
+      // Clear cached home view since birthday data changed
+      await this.clearCachedHomeView();
+    } catch (error) {
+      this.logger.error('Failed to store birthday data', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieve birthday data with automatic migration
+   */
+  async getBirthdayData(): Promise<BirthdayData> {
+    try {
+      const data = await this.kv.get(STORAGE_KEYS.BIRTHDAY_DATA, 'text');
+      
+      if (!data) {
+        this.logger.info('No birthday data found, returning empty dataset');
+        return { birthdays: [] };
+      }
+
+      const rawData = JSON.parse(data);
+      
+      // Attempt migration if needed
+      const migrationResult = migrateToLatestFormat(rawData);
+      
+      if (!migrationResult.success) {
+        this.logger.error('Failed to migrate birthday data', { 
+          errors: migrationResult.errors,
+          warnings: migrationResult.warnings 
+        });
+        throw new Error(`Data migration failed: ${migrationResult.errors.join(', ')}`);
+      }
+
+      if (migrationResult.warnings.length > 0) {
+        this.logger.warn('Birthday data migration completed with warnings', { 
+          warnings: migrationResult.warnings 
+        });
+      }
+
+      const birthdayData = migrationResult.migratedData!;
+      this.logger.info('Birthday data retrieved', { count: birthdayData.birthdays.length });
+      
+      // If data was migrated, save the updated version
+      if (migrationResult.originalVersion !== null && migrationResult.originalVersion < migrationResult.targetVersion) {
+        this.logger.info('Updating stored data to latest format');
+        await this.kv.put(
+          STORAGE_KEYS.BIRTHDAY_DATA,
+          JSON.stringify(birthdayData),
+          { 
+            metadata: { 
+              updatedAt: Date.now(),
+              birthdayCount: birthdayData.birthdays.length,
+              migratedFrom: migrationResult.originalVersion
+            }
+          }
+        );
+      }
+      
+      return birthdayData;
+    } catch (error) {
+      this.logger.error('Failed to get birthday data', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Update birthday data (replaces existing data)
+   */
+  async updateBirthdayData(data: BirthdayData): Promise<void> {
+    try {
+      this.logger.info('Updating birthday data', { count: data.birthdays.length });
+      
+      // Store the new data
+      await this.storeBirthdayData(data);
+      
+      this.logger.info('Birthday data updated successfully', { count: data.birthdays.length });
+    } catch (error) {
+      this.logger.error('Failed to update birthday data', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Get birthday data metadata without loading full data
+   */
+  async getBirthdayDataMetadata(): Promise<{ updatedAt?: number; birthdayCount?: number } | null> {
+    try {
+      const result = await this.kv.getWithMetadata(STORAGE_KEYS.BIRTHDAY_DATA);
+      
+      if (!result.metadata) {
+        return null;
+      }
+
+      const metadata = result.metadata as Record<string, unknown>;
+      return {
+        updatedAt: typeof metadata.updatedAt === 'number' ? metadata.updatedAt : undefined,
+        birthdayCount: typeof metadata.birthdayCount === 'number' ? metadata.birthdayCount : undefined
+      };
+    } catch (error) {
+      this.logger.error('Failed to get birthday data metadata', { error });
+      return null;
+    }
+  }
+
+  /**
+   * Check if birthday data exists
+   */
+  async hasBirthdayData(): Promise<boolean> {
+    try {
+      const metadata = await this.getBirthdayDataMetadata();
+      return metadata !== null;
+    } catch (error) {
+      this.logger.error('Failed to check if birthday data exists', { error });
+      return false;
     }
   }
 }
