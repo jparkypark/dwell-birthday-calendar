@@ -1,0 +1,22 @@
+name = "dwell-birthday-calendar"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[env.development]
+name = "dwell-birthday-calendar-dev"
+
+[env.production]
+name = "dwell-birthday-calendar-prod"
+
+# KV Namespaces will be configured after creation
+# [[kv_namespaces]]
+# binding = "BIRTHDAY_KV"
+# id = "TBD"
+# preview_id = "TBD"
+
+# Environment variables (will be set via wrangler secret put)
+# [vars]
+# SLACK_SIGNING_SECRET = "TBD"
+# SLACK_CLIENT_ID = "TBD"
+# SLACK_CLIENT_SECRET = "TBD"
+# ADMIN_PASSWORD = "TBD"
