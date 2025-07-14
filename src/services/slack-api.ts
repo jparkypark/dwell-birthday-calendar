@@ -7,6 +7,7 @@ import {
   SlackAuthTestResponse 
 } from '../types/slack';
 import { AppError } from '../middleware/error-handler';
+import { API_CONSTANTS } from '../config';
 
 export class SlackApiService {
   private logger: Logger;
@@ -144,7 +145,7 @@ export class SlackApiService {
     method: string,
     token: string,
     payload: Record<string, unknown>,
-    maxRetries: number = 3
+    maxRetries: number = API_CONSTANTS.MAX_RETRIES
   ): Promise<SlackWebApiResponse> {
     let lastError: Error | null = null;
     
@@ -180,7 +181,7 @@ export class SlackApiService {
         });
         
         // Exponential backoff
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        const delay = Math.min(API_CONSTANTS.INITIAL_RETRY_DELAY * Math.pow(API_CONSTANTS.RETRY_BACKOFF_BASE, attempt - 1), API_CONSTANTS.MAX_RETRY_DELAY);
         await new Promise(resolve => globalThis.setTimeout(resolve, delay));
       }
     }

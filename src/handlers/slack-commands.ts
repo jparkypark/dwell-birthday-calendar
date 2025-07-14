@@ -4,7 +4,12 @@ import { verifySlackRequest } from '../middleware/slack-verification';
 import { AppError } from '../middleware/error-handler';
 import { validateSlackCommand } from '../utils/validation';
 import { createStorageService } from '../utils/storage';
-import { calculateUpcomingBirthdays, formatRelativeDate } from '../utils/dates';
+import { calculateUpcomingBirthdays } from '../utils/dates';
+import { 
+  createBirthdaysSlackResponse, 
+  createSlackErrorResponse, 
+  createSlackInfoResponse 
+} from '../utils/slack-formatting';
 import { Env } from '../index';
 
 export async function handleSlackCommands(
@@ -90,29 +95,19 @@ async function handleBirthdaysCommand(
     const err = error as Error;
     logger.error('Error handling birthdays command', { error: err.message, stack: err.stack });
     
-    return new Response(JSON.stringify({
-      response_type: 'ephemeral',
-      text: '❌ Sorry, I encountered an error while fetching birthday data. Please try again later.',
-    }), {
+    const response = createSlackErrorResponse('Sorry, I encountered an error while fetching birthday data. Please try again later.');
+    
+    return new Response(JSON.stringify(response), {
       headers: { 'Content-Type': 'application/json' },
     });
   }
 }
 
 function createNoBirthdaysResponse(): Response {
-  const response = {
-    response_type: 'ephemeral' as const,
-    text: '📅 No birthday data available',
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: '📅 *No Birthday Data Available*\n\nIt looks like no birthday information has been added yet. Please contact your workspace administrator to add birthday data.',
-        },
-      },
-    ],
-  };
+  const response = createSlackInfoResponse(
+    '📅 No birthday data available',
+    'It looks like no birthday information has been added yet. Please contact your workspace administrator to add birthday data.'
+  );
 
   return new Response(JSON.stringify(response), {
     headers: { 'Content-Type': 'application/json' },
@@ -120,128 +115,18 @@ function createNoBirthdaysResponse(): Response {
 }
 
 function createNoUpcomingBirthdaysResponse(): Response {
-  const response = {
-    response_type: 'ephemeral' as const,
-    text: '🎉 No upcoming birthdays in the next 30 days',
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: '🎉 *No Upcoming Birthdays*\n\nThere are no birthdays coming up in the next 30 days. Check back later!',
-        },
-      },
-    ],
-  };
+  const response = createSlackInfoResponse(
+    '🎉 No upcoming birthdays in the next 30 days',
+    'There are no birthdays coming up in the next 30 days. Check back later!'
+  );
 
   return new Response(JSON.stringify(response), {
     headers: { 'Content-Type': 'application/json' },
   });
 }
 
-interface SlackContextBlock {
-  type: 'context';
-  elements: Array<{
-    type: 'mrkdwn' | 'plain_text';
-    text: string;
-  }>;
-}
-
-interface SlackSectionBlock {
-  type: 'section';
-  text: {
-    type: 'mrkdwn' | 'plain_text';
-    text: string;
-  };
-}
-
-interface SlackDividerBlock {
-  type: 'divider';
-}
-
-type SlackBlock = SlackContextBlock | SlackSectionBlock | SlackDividerBlock;
-
 function createBirthdaysResponse(upcomingBirthdays: import('../types/birthday').UpcomingBirthday[]): Response {
-  const blocks: SlackBlock[] = [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `🎂 *Upcoming Birthdays* 🎂\n\nHere are the next ${upcomingBirthdays.length} birthday${upcomingBirthdays.length > 1 ? 's' : ''} coming up:`,
-      },
-    },
-    {
-      type: 'divider',
-    },
-  ];
-
-  // Group birthdays by date to show multiple people with the same birthday together
-  const birthdayGroups: Record<string, typeof upcomingBirthdays> = {};
-  
-  for (const birthday of upcomingBirthdays) {
-    const key = `${birthday.daysUntil}-${birthday.displayDate}`;
-    if (!birthdayGroups[key]) {
-      birthdayGroups[key] = [];
-    }
-    birthdayGroups[key].push(birthday);
-  }
-
-  // Sort groups by days until birthday
-  const sortedGroups = Object.entries(birthdayGroups).sort(([a], [b]) => {
-    const aDays = parseInt(a.split('-')[0]);
-    const bDays = parseInt(b.split('-')[0]);
-    return aDays - bDays;
-  });
-
-  for (const [, group] of sortedGroups) {
-    const firstBirthday = group[0];
-    const relativeDate = formatRelativeDate(firstBirthday.daysUntil);
-    
-    // Create list of names, with @mentions if Slack user IDs are available
-    const namesList = group.map(birthday => 
-      birthday.slackUserId ? `<@${birthday.slackUserId}>` : birthday.name
-    ).join(', ');
-
-    // Use appropriate emoji based on how soon the birthday is
-    let emoji = '🎉';
-    if (firstBirthday.daysUntil === 0) {
-      emoji = '🎂';
-    } else if (firstBirthday.daysUntil === 1) {
-      emoji = '🎁';
-    } else if (firstBirthday.daysUntil <= 7) {
-      emoji = '📅';
-    }
-
-    blocks.push({
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `${emoji} **${firstBirthday.displayDate}** (${relativeDate})\n${namesList}`,
-      },
-    });
-  }
-
-  // Add footer with total count
-  blocks.push(
-    {
-      type: 'divider',
-    },
-    {
-      type: 'context',
-      elements: [
-        {
-          type: 'mrkdwn',
-          text: `📊 Showing ${upcomingBirthdays.length} upcoming birthday${upcomingBirthdays.length > 1 ? 's' : ''} in the next 30 days`,
-        },
-      ],
-    }
-  );
-
-  const response = {
-    response_type: 'ephemeral' as const,
-    text: `🎂 ${upcomingBirthdays.length} upcoming birthday${upcomingBirthdays.length > 1 ? 's' : ''}!`,
-    blocks,
-  };
+  const response = createBirthdaysSlackResponse(upcomingBirthdays);
 
   return new Response(JSON.stringify(response), {
     headers: { 'Content-Type': 'application/json' },

@@ -1,4 +1,5 @@
 import { Birthday, BirthdayData } from '../types/birthday';
+import { VALIDATION_LIMITS, UI_LIMITS } from '../config';
 
 export class ValidationError extends Error {
   constructor(message: string, public field?: string) {
@@ -27,8 +28,8 @@ export function validateBirthdayEntry(birthday: unknown): Birthday {
     throw new ValidationError('Birthday name cannot be empty', 'name');
   }
 
-  if (name.length > 100) {
-    throw new ValidationError('Birthday name cannot exceed 100 characters', 'name');
+  if (name.length > VALIDATION_LIMITS.MAX_NAME_LENGTH) {
+    throw new ValidationError(`Birthday name cannot exceed ${VALIDATION_LIMITS.MAX_NAME_LENGTH} characters`, 'name');
   }
 
   // Validate month
@@ -37,8 +38,8 @@ export function validateBirthdayEntry(birthday: unknown): Birthday {
   }
 
   const month = Math.floor(entry.month);
-  if (month < 1 || month > 12) {
-    throw new ValidationError('Month must be between 1 and 12', 'month');
+  if (month < VALIDATION_LIMITS.MIN_MONTH || month > VALIDATION_LIMITS.MAX_MONTH) {
+    throw new ValidationError(`Month must be between ${VALIDATION_LIMITS.MIN_MONTH} and ${VALIDATION_LIMITS.MAX_MONTH}`, 'month');
   }
 
   // Validate day
@@ -47,8 +48,8 @@ export function validateBirthdayEntry(birthday: unknown): Birthday {
   }
 
   const day = Math.floor(entry.day);
-  if (day < 1 || day > 31) {
-    throw new ValidationError('Day must be between 1 and 31', 'day');
+  if (day < VALIDATION_LIMITS.MIN_DAY || day > VALIDATION_LIMITS.MAX_DAY) {
+    throw new ValidationError(`Day must be between ${VALIDATION_LIMITS.MIN_DAY} and ${VALIDATION_LIMITS.MAX_DAY}`, 'day');
   }
 
   // Validate day exists for the given month
@@ -67,7 +68,7 @@ export function validateBirthdayEntry(birthday: unknown): Birthday {
     if (slackUserId.length === 0) {
       slackUserId = undefined;
     } else if (!/^U[A-Z0-9]{8,}$/.test(slackUserId)) {
-      throw new ValidationError('slackUserId must be a valid Slack user ID format (U followed by 8+ characters)', 'slackUserId');
+      throw new ValidationError(`slackUserId must be a valid Slack user ID format (U followed by ${VALIDATION_LIMITS.SLACK_USER_ID_MIN_LENGTH}+ characters)`, 'slackUserId');
     }
   }
 
@@ -200,10 +201,8 @@ export function isValidDate(month: number, day: number): boolean {
  * Validates that birthday data doesn't exceed reasonable limits
  */
 export function validateBirthdayDataLimits(data: BirthdayData): void {
-  const MAX_BIRTHDAYS = 1000; // Reasonable limit for a church
-  
-  if (data.birthdays.length > MAX_BIRTHDAYS) {
-    throw new ValidationError(`Too many birthdays: ${data.birthdays.length}. Maximum allowed: ${MAX_BIRTHDAYS}`);
+  if (data.birthdays.length > UI_LIMITS.MAX_BIRTHDAYS_LIMIT) {
+    throw new ValidationError(`Too many birthdays: ${data.birthdays.length}. Maximum allowed: ${UI_LIMITS.MAX_BIRTHDAYS_LIMIT}`);
   }
 }
 

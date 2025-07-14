@@ -1,4 +1,5 @@
 import { Birthday, UpcomingBirthday } from '../types/birthday';
+import { BUSINESS_RULES, DATE_CONSTANTS } from '../config';
 
 /**
  * Month names for display formatting
@@ -19,7 +20,7 @@ const SHORT_MONTH_NAMES = [
 /**
  * Calculate upcoming birthdays within the specified number of days
  */
-export function calculateUpcomingBirthdays(birthdays: Birthday[], days: number = 30): UpcomingBirthday[] {
+export function calculateUpcomingBirthdays(birthdays: Birthday[], days: number = BUSINESS_RULES.DEFAULT_UPCOMING_DAYS): UpcomingBirthday[] {
   const today = new Date();
   const upcoming: UpcomingBirthday[] = [];
 
@@ -57,8 +58,8 @@ export function getDaysUntilBirthday(month: number, day: number, fromDate: Date 
   let birthdayThisYear = new Date(today.getFullYear(), month - 1, day);
   
   // Handle February 29th on non-leap years
-  if (month === 2 && day === 29 && !isLeapYear(today.getFullYear())) {
-    birthdayThisYear = new Date(today.getFullYear(), 1, 28); // Feb 28th
+  if (month === DATE_CONSTANTS.FEBRUARY_MONTH && day === DATE_CONSTANTS.FEBRUARY_LEAP_DAY && !isLeapYear(today.getFullYear())) {
+    birthdayThisYear = new Date(today.getFullYear(), 1, DATE_CONSTANTS.FEBRUARY_FALLBACK_DAY);
   }
   
   // If birthday has already passed this year, calculate for next year
@@ -67,14 +68,14 @@ export function getDaysUntilBirthday(month: number, day: number, fromDate: Date 
     birthdayThisYear = new Date(nextYear, month - 1, day);
     
     // Handle February 29th on non-leap years for next year
-    if (month === 2 && day === 29 && !isLeapYear(nextYear)) {
-      birthdayThisYear = new Date(nextYear, 1, 28); // Feb 28th
+    if (month === DATE_CONSTANTS.FEBRUARY_MONTH && day === DATE_CONSTANTS.FEBRUARY_LEAP_DAY && !isLeapYear(nextYear)) {
+      birthdayThisYear = new Date(nextYear, 1, DATE_CONSTANTS.FEBRUARY_FALLBACK_DAY);
     }
   }
   
   // Calculate difference in milliseconds and convert to days
   const diffTime = birthdayThisYear.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.ceil(diffTime / DATE_CONSTANTS.MILLISECONDS_PER_DAY);
   
   return diffDays;
 }
@@ -120,8 +121,8 @@ export function getTodaysBirthdays(birthdays: Birthday[], date: Date = new Date(
   return birthdays
     .filter(birthday => {
       // Handle February 29th birthdays on non-leap years
-      if (birthday.month === 2 && birthday.day === 29 && !isLeapYear(date.getFullYear())) {
-        return month === 2 && day === 28;
+      if (birthday.month === DATE_CONSTANTS.FEBRUARY_MONTH && birthday.day === DATE_CONSTANTS.FEBRUARY_LEAP_DAY && !isLeapYear(date.getFullYear())) {
+        return month === DATE_CONSTANTS.FEBRUARY_MONTH && day === DATE_CONSTANTS.FEBRUARY_FALLBACK_DAY;
       }
       return birthday.month === month && birthday.day === day;
     })
@@ -146,7 +147,7 @@ export function getBirthdaysInMonth(birthdays: Birthday[], month: number): Birth
  * Get the next N birthdays
  */
 export function getNextBirthdays(birthdays: Birthday[], count: number): UpcomingBirthday[] {
-  const upcoming = calculateUpcomingBirthdays(birthdays, 365); // Get all birthdays in the next year
+  const upcoming = calculateUpcomingBirthdays(birthdays, BUSINESS_RULES.NEXT_YEAR_DAYS);
   return upcoming.slice(0, count);
 }
 
@@ -158,14 +159,14 @@ export function formatRelativeDate(daysUntil: number): string {
     return 'today';
   } else if (daysUntil === 1) {
     return 'tomorrow';
-  } else if (daysUntil <= 7) {
+  } else if (daysUntil <= DATE_CONSTANTS.DAYS_PER_WEEK) {
     return `in ${daysUntil} days`;
-  } else if (daysUntil <= 14) {
-    return `in ${Math.ceil(daysUntil / 7)} week${daysUntil > 7 ? 's' : ''}`;
-  } else if (daysUntil <= 60) {
-    return `in ${Math.ceil(daysUntil / 7)} weeks`;
+  } else if (daysUntil <= DATE_CONSTANTS.WEEKS_FOR_RELATIVE_DISPLAY * DATE_CONSTANTS.DAYS_PER_WEEK) {
+    return `in ${Math.ceil(daysUntil / DATE_CONSTANTS.DAYS_PER_WEEK)} week${daysUntil > DATE_CONSTANTS.DAYS_PER_WEEK ? 's' : ''}`;
+  } else if (daysUntil <= DATE_CONSTANTS.DAYS_FOR_WEEKS_DISPLAY) {
+    return `in ${Math.ceil(daysUntil / DATE_CONSTANTS.DAYS_PER_WEEK)} weeks`;
   } else {
-    return `in ${Math.ceil(daysUntil / 30)} months`;
+    return `in ${Math.ceil(daysUntil / DATE_CONSTANTS.DAYS_PER_MONTH_APPROX)} months`;
   }
 }
 
@@ -223,7 +224,7 @@ export function getBirthdayStats(birthdays: Birthday[], referenceDate: Date = ne
   let birthdaysNextMonth = 0;
   
   // Initialize month distribution
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= DATE_CONSTANTS.MONTHS_PER_YEAR; i++) {
     monthDistribution[i] = 0;
   }
   
@@ -250,7 +251,7 @@ export function getBirthdayStats(birthdays: Birthday[], referenceDate: Date = ne
     }
   }
   
-  const birthdaysNext30Days = calculateUpcomingBirthdays(birthdays, 30).length;
+  const birthdaysNext30Days = calculateUpcomingBirthdays(birthdays, BUSINESS_RULES.BIRTHDAY_STATS_DAYS).length;
   
   return {
     totalBirthdays: birthdays.length,

@@ -7,6 +7,7 @@ import {
   formatRelativeDate
 } from '../utils/dates';
 import { createLogger, Logger } from '../utils/logger';
+import { BUSINESS_RULES, UI_LIMITS, DATE_CONSTANTS } from '../config';
 
 export interface HomeViewState {
   hasData: boolean;
@@ -37,7 +38,7 @@ export class HomeViewGenerator {
     }
 
     const todaysBirthdays = getTodaysBirthdays(birthdays);
-    const upcomingBirthdays = calculateUpcomingBirthdays(birthdays, expanded ? 90 : 30);
+    const upcomingBirthdays = calculateUpcomingBirthdays(birthdays, expanded ? BUSINESS_RULES.EXPANDED_UPCOMING_DAYS : BUSINESS_RULES.DEFAULT_UPCOMING_DAYS);
     const stats = getBirthdayStats(birthdays);
 
     const blocks: SlackHomeViewBlock[] = [];
@@ -252,7 +253,7 @@ export class HomeViewGenerator {
         const bDays = parseInt(b.split('-')[0]);
         return aDays - bDays;
       })
-      .slice(0, expanded ? 20 : 10); // Limit display
+      .slice(0, expanded ? UI_LIMITS.EXPANDED_BIRTHDAY_DISPLAY : UI_LIMITS.COMPACT_BIRTHDAY_DISPLAY);
 
     for (const [, group] of sortedGroups) {
       const firstBirthday = group[0];
@@ -267,7 +268,7 @@ export class HomeViewGenerator {
       let emoji = '🎉';
       if (firstBirthday.daysUntil === 1) {
         emoji = '🎁';
-      } else if (firstBirthday.daysUntil <= 7) {
+      } else if (firstBirthday.daysUntil <= DATE_CONSTANTS.DAYS_PER_WEEK) {
         emoji = '📅';
       }
 
@@ -306,7 +307,7 @@ export class HomeViewGenerator {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: '🎉 *No Upcoming Birthdays*\n\nThere are no birthdays coming up in the next 30 days. Check back later!'
+          text: `🎉 *No Upcoming Birthdays*\n\nThere are no birthdays coming up in the next ${BUSINESS_RULES.DEFAULT_UPCOMING_DAYS} days. Check back later!`
         }
       },
       { type: 'divider' }
@@ -331,7 +332,7 @@ export class HomeViewGenerator {
       `👥 Total birthdays: ${stats.totalBirthdays}`,
       `📅 This month: ${stats.birthdaysThisMonth}`,
       `📅 Next month: ${stats.birthdaysNextMonth}`,
-      `🎯 Next 30 days: ${stats.birthdaysNext30Days}`
+      `🎯 Next ${BUSINESS_RULES.BIRTHDAY_STATS_DAYS} days: ${stats.birthdaysNext30Days}`
     ].join('\n');
 
     blocks.push({
