@@ -2,6 +2,14 @@ name = "dwell-birthday-calendar"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
+# Scheduled events configuration
+[triggers]
+crons = [
+  "0 8 * * *",     # Daily cache refresh (8:00 AM UTC)
+  "0 9-17 * * 1-5", # Hourly cache warming (business hours, weekdays)
+  "0 0 1 * *"      # Monthly maintenance (1st of month, midnight UTC)
+]
+
 [env.development]
 name = "dwell-birthday-calendar-dev"
 routes = [
@@ -11,6 +19,12 @@ routes = [
 binding = "BIRTHDAY_KV"
 id = "83f5ade22d674bb38f857b367de5c7a7"
 preview_id = "83f5ade22d674bb38f857b367de5c7a7"
+
+# Development-specific scheduled events (more frequent for testing)
+[env.development.triggers]
+crons = [
+  "*/5 * * * *"    # Every 5 minutes for development testing
+]
 
 [env.production]
 name = "dwell-birthday-calendar-prod"

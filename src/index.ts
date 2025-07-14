@@ -6,9 +6,16 @@ import { handleOAuthRedirect } from './handlers/oauth';
 import { AdminHandler } from './handlers/admin';
 import { AdminUpdateHandler } from './handlers/admin-update';
 import { createAdminAuthMiddleware } from './middleware/admin-auth';
+import { handleScheduledEvent } from './handlers/scheduled';
 import { createLogger } from './utils/logger';
 import { createErrorResponse } from './middleware/error-handler';
 import { validateEnvironmentVariables } from './utils/validation';
+
+// Type definition for Cloudflare Workers ScheduledController
+interface ScheduledController {
+  scheduledTime: number;
+  cron: string;
+}
 
 export interface Env {
   BIRTHDAY_KV?: KVNamespace;
@@ -173,4 +180,29 @@ export default {
       return createErrorResponse(err, logger['requestId']);
     }
   },
+
+  async scheduled(
+    controller: ScheduledController,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<void> {
+    const logger = createLogger();
+    
+    // Validate environment variables for scheduled events
+    try {
+      validateEnvironmentVariables(env);
+    } catch (error) {
+      const err = error as Error;
+      logger.error('Environment validation failed in scheduled event', { 
+        error: err.message,
+        cron: controller.cron 
+      });
+      return;
+    }
+    
+    // Use waitUntil to ensure scheduled task completes
+    ctx.waitUntil(
+      handleScheduledEvent(controller, env, logger)
+    );
+  }
 };
