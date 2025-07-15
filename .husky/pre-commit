@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged for staged files
+npx lint-staged
+
+# Run type checking on entire codebase
+npm run type-check
+
+# Run tests to ensure nothing is broken
+npm test

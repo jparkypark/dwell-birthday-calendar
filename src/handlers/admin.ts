@@ -224,7 +224,7 @@ export class AdminHandler extends BaseHandler {
             <div class="status-info">
               <h3>Cache Status</h3>
               <p><strong>Last Updated:</strong> ${lastUpdated}</p>
-              <p><strong>Total Birthdays:</strong> ${JSON.parse(jsonData).birthdays.length}</p>
+              <p><strong>Total Birthdays:</strong> ${globalThis.JSON.parse(jsonData).birthdays.length}</p>
             </div>
             
             <form method="POST" action="/admin/update">

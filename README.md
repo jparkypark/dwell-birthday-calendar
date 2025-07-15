@@ -1,5 +1,11 @@
 # Dwell Birthday Calendar
 
+[![CI](https://github.com/dwell-church/dwell-birthday-calendar/actions/workflows/ci.yml/badge.svg)](https://github.com/dwell-church/dwell-birthday-calendar/actions/workflows/ci.yml)
+[![Deploy](https://github.com/dwell-church/dwell-birthday-calendar/actions/workflows/deploy.yml/badge.svg)](https://github.com/dwell-church/dwell-birthday-calendar/actions/workflows/deploy.yml)
+[![codecov](https://codecov.io/gh/dwell-church/dwell-birthday-calendar/graph/badge.svg)](https://codecov.io/gh/dwell-church/dwell-birthday-calendar)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare%20Workers-F38020?style=flat&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+
 A lightweight Slack application that displays member birthdays for Dwell Church through an interactive home tab and slash command.
 
 ## Overview

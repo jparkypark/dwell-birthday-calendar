@@ -1,11 +1,11 @@
 import { vi } from 'vitest';
-import { SlackApiResponse } from '../../src/types/slack';
+import { SlackWebApiResponse } from '../../src/types/slack';
 
 export const mockSlackApiResponse = (
   ok: boolean = true,
   data: any = {},
   error?: string
-): SlackApiResponse => ({
+): SlackWebApiResponse => ({
   ok,
   error,
   ...data
