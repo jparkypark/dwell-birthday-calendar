@@ -14,7 +14,7 @@ This guide covers the complete deployment process for the Dwell Birthday Calenda
 
 ### Required Tools
 
-- **Node.js**: Version 18 or higher
+- **Node.js**: Version 22 or higher
 - **npm**: Package manager
 - **Wrangler CLI**: Cloudflare Workers deployment tool
 - **Git**: Version control

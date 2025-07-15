@@ -1,0 +1,95 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  NODE_ENV: development
+
+jobs:
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    environment: development
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run quick CI checks
+        run: |
+          npm run lint
+          npm run type-check
+          npm run test
+          
+      - name: Install Wrangler
+        run: npm install -g wrangler
+        
+      - name: Verify Wrangler Installation
+        run: wrangler --version
+        
+      - name: Check Wrangler Configuration
+        run: |
+          echo "Checking if API token is set..."
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "❌ CLOUDFLARE_API_TOKEN is not set!"
+            exit 1
+          else
+            echo "✅ CLOUDFLARE_API_TOKEN is set"
+          fi
+          
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "❌ CLOUDFLARE_ACCOUNT_ID is not set!"
+            exit 1
+          else
+            echo "✅ CLOUDFLARE_ACCOUNT_ID is set"
+          fi
+          
+          wrangler whoami
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          
+      - name: Deploy to Development
+        run: |
+          echo "Starting deployment to development environment..."
+          wrangler deploy --env development
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          
+      - name: Show Wrangler logs on failure
+        if: failure()
+        run: |
+          echo "Deployment failed. Checking for wrangler logs..."
+          if [ -d "$HOME/.config/.wrangler/logs" ]; then
+            echo "Latest wrangler log:"
+            ls -la $HOME/.config/.wrangler/logs/
+            cat $HOME/.config/.wrangler/logs/wrangler-*.log | tail -50
+          else
+            echo "No wrangler logs found"
+          fi
+          
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🚀 Development deployment completed successfully!"
+          echo "App URL: https://dev-birthday.angiesplantdiary.com"
+          echo "You can now test changes before deploying to production."
+          
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Development deployment failed!"
+          echo "Please check the logs and fix issues before deploying to production."

@@ -71,7 +71,7 @@ The application is feature-complete and ready for production deployment.
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 22+
 - Cloudflare account
 - Slack workspace with admin access
 

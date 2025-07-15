@@ -1,6 +1,6 @@
 name = "dwell-birthday-calendar"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-12-01"
 
 # Scheduled events configuration
 [triggers]
@@ -34,6 +34,7 @@ routes = [
 [[env.production.kv_namespaces]]
 binding = "BIRTHDAY_KV"
 id = "83f5ade22d674bb38f857b367de5c7a7"
+preview_id = "83f5ade22d674bb38f857b367de5c7a7"
 
 # Environment variables (will be set via wrangler secret put)
 # [vars]

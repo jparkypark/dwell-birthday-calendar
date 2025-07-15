@@ -1,18 +1,25 @@
 name: Deploy to Cloudflare Workers
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - production
 
 env:
   NODE_ENV: production
 
 jobs:
   deploy:
-    name: Deploy to Production
+    name: Deploy to ${{ github.event.inputs.environment }}
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ github.event.inputs.environment }}
     
     steps:
       - name: Checkout code
@@ -21,7 +28,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           
       - name: Install dependencies
@@ -34,21 +41,28 @@ jobs:
           npm run test
           npm run build
           
+      - name: Install Wrangler
+        run: npm install -g wrangler
+        
       - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env production
+        run: wrangler deploy --env ${{ github.event.inputs.environment }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           
       - name: Notify deployment success
         if: success()
         run: |
-          echo "🚀 Deployment to production completed successfully!"
-          echo "App URL: https://birthday.angiesplantdiary.com"
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+            echo "🚀 Deployment to production completed successfully!"
+            echo "App URL: https://birthday.angiesplantdiary.com"
+          else
+            echo "🚀 Deployment to development completed successfully!"
+            echo "App URL: https://dev-birthday.angiesplantdiary.com"
+          fi
           
       - name: Notify deployment failure
         if: failure()
         run: |
-          echo "❌ Deployment to production failed!"
+          echo "❌ Deployment to ${{ github.event.inputs.environment }} failed!"
           echo "Please check the logs for more details."
